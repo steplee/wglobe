@@ -1,17 +1,7 @@
-use std::{iter, sync::Arc};
-use log::info;
+use std::sync::Arc;
 
-use wgpu::util::DeviceExt;
-use winit::{
-    application::ApplicationHandler,
-    event::*,
-    event_loop::{ActiveEventLoop, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
-    window::Window,
-};
+use winit::window::Window;
 
-use super::Renderable;
-use super::RenderState;
 
 pub struct AppObjects {
     pub surface: wgpu::Surface<'static>,

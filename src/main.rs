@@ -1,20 +1,15 @@
-use std::{iter, sync::Arc};
-use log::info;
+use std::iter;
 
-use wgpu::util::DeviceExt;
 use winit::{
-    application::ApplicationHandler,
     event::*,
     event_loop::{ActiveEventLoop, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
-    window::Window,
+    keyboard::KeyCode,
 };
 
 pub mod core;
 pub mod renderables;
 
-use core::{AppObjects, RenderState, BaseApp, UserApp, Renderable};
-use renderables::{SimpleShape};
+use core::{AppObjects, RenderState, BaseApp, UserApp, Renderable, Camera};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -23,6 +18,7 @@ use wasm_bindgen::prelude::*;
 #[derive(Default)]
 struct MyApp {
     renderables: Vec<Box<dyn Renderable>>,
+    cam: Camera,
 }
 impl UserApp for MyApp {
     fn render(&mut self, ao: &AppObjects) -> Result<(), wgpu::SurfaceError> {
@@ -52,6 +48,7 @@ impl UserApp for MyApp {
             ao: &ao,
             encoder: encoder,
             surface_tex_view: Some(view),
+            cam: &self.cam,
         };
 
         {
@@ -65,12 +62,16 @@ impl UserApp for MyApp {
 
         Ok(())
     }
-    fn handle_key(&mut self, ao: &AppObjects, event_loop: &ActiveEventLoop, key: KeyCode, pressed: bool) {
+    fn handle_key(&mut self, _ao: &AppObjects, event_loop: &ActiveEventLoop, key: KeyCode, pressed: bool) {
+
+        let t = nalgebra::Isometry3::<f32>::translation(0.1, 0., 0.);
+        self.cam.pose = self.cam.pose * t;
+
         for r in &mut self.renderables {
             r.handle_key(event_loop, key, pressed);
         }
     }
-    fn handle_mouse(&mut self, ao: &AppObjects, event_loop: &ActiveEventLoop, state: ElementState, button: MouseButton) {
+    fn handle_mouse(&mut self, _ao: &AppObjects, _event_loop: &ActiveEventLoop, _state: ElementState, _button: MouseButton) {
     }
 }
 

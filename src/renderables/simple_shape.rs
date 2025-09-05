@@ -1,14 +1,6 @@
-use std::{iter, sync::Arc};
 use log::info;
 
 use wgpu::util::DeviceExt;
-use winit::{
-    application::ApplicationHandler,
-    event::*,
-    event_loop::{ActiveEventLoop, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
-    window::Window,
-};
 
 use crate::core::{AppObjects, RenderState, Renderable};
 
@@ -75,7 +67,7 @@ impl SimpleShape {
     pub fn new(ao: &AppObjects) -> Self {
         let shader = ao.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("simple_shape.wgsl").into()),
         });
 
         let render_pipeline_layout =
