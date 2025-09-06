@@ -8,4 +8,4 @@ pub use app::Renderable;
 pub use app::UserApp;
 pub use app::BaseApp;
 
-pub use camera::{CameraIntrin, Camera, LoweredScene};
+pub use camera::{CameraIntrin, CameraPose, Scene, LoweredScene};

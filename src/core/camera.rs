@@ -1,9 +1,11 @@
 use nalgebra::{Isometry3,Point3,Vector3};
+use wgpu::util::DeviceExt;
+
+use super::AppObjects;
 
 type Isometry3f = Isometry3<f32>;
 type Point3f = Point3<f32>;
 type Vector3f = Vector3<f32>;
-
 
 pub struct CameraIntrin {
     tlbr: [f32; 4],
@@ -11,17 +13,82 @@ pub struct CameraIntrin {
     zf: f32,
 }
 
-
-pub struct Camera {
+pub struct CameraPose {
     pub intrin: CameraIntrin,
     pub pose: Isometry3f,
 }
 
-impl Default for Camera {
+pub struct Scene {
+    pub cam: CameraPose,
+    pub time: f32,
+
+    pub buffer: wgpu::Buffer,
+    pub bind_group: wgpu::BindGroup,
+}
+
+impl CameraIntrin {
+    fn to_matrix(&self) -> nalgebra::Matrix4<f32> {
+        let mut out = nalgebra::Matrix4::<f32>::identity();
+        let left = self.tlbr[0];
+        let rght = self.tlbr[2];
+        let top = self.tlbr[1];
+        let bot = self.tlbr[3];
+        out[0*4+0] = 2.0*self.zn / (rght-left);
+        out[1*4+1] = 2.0*self.zn / (top-bot);
+        out[0*4+2] = (rght+left)/(rght-left);
+        out[1*4+2] = (top+bot)/(top-bot);
+        out[2*4+2] = -(self.zn+self.zf)/(self.zf-self.zn);
+        out[2*4+3] = 2.0*self.zf*self.zn/(self.zf-self.zn);
+        out[3*4+2] = -1.0;
+        return out;
+    }
+}
+
+impl Default for CameraPose {
     fn default() -> Self {
-        return Camera {
+        return CameraPose {
             intrin: CameraIntrin { tlbr: [-1.,-1.,1.,1.], zn: 0.001, zf: 100. },
             pose: Isometry3f::look_at_lh(&Point3f::new(0.,0.,-2.), &Vector3f::zeros().into(), &Vector3f::y())
+        }
+    }
+}
+
+impl Scene {
+    fn new(ao: &AppObjects) -> Self {
+
+        let cam = Default::default();
+
+        let buffer = ao.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("cameraBuffer"),
+            contents: bytemuck::cast_slice(&[LoweredScene::default()]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
+        });
+
+        let bind_group = todo!();
+
+        Scene {
+            cam,
+            time: 0.,
+            buffer,
+            bind_group
+        }
+    }
+}
+
+fn slice_to_array<T, const N: usize>(s: &[T]) -> [T; N] 
+where T: Default + Copy
+{
+    let mut out: [T; N] = [T::default(); N];
+    out.copy_from_slice(s);
+    return out;
+}
+
+impl Into<LoweredScene> for &Scene {
+    fn into(self) -> LoweredScene {
+        LoweredScene {
+            mv: slice_to_array(self.cam.pose.to_matrix().as_slice()),
+            proj: slice_to_array(self.cam.intrin.to_matrix().as_slice()),
+            time: self.time,
         }
     }
 }
@@ -31,7 +98,6 @@ impl Default for Camera {
 pub struct LoweredScene {
     mv: [f32; 16],
     proj: [f32; 16],
-    mvp: [f32; 16],
     time: f32,
 }
 

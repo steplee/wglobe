@@ -9,7 +9,7 @@ use winit::{
 };
 
 use super::AppObjects;
-use super::Camera;
+use super::Scene;
 
 pub struct RenderState<'a> {
     pub ao: &'a AppObjects,
@@ -18,7 +18,7 @@ pub struct RenderState<'a> {
 
     pub surface_tex_view: Option<wgpu::TextureView>,
 
-    pub cam: &'a Camera,
+    pub scene: &'a Scene,
 
     // model: [f32; 16],
     // view: [f32; 16],

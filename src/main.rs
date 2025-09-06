@@ -9,7 +9,7 @@ use winit::{
 pub mod core;
 pub mod renderables;
 
-use core::{AppObjects, RenderState, BaseApp, UserApp, Renderable, Camera};
+use core::{AppObjects, RenderState, BaseApp, UserApp, Renderable, CameraPose, Scene};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -18,7 +18,7 @@ use wasm_bindgen::prelude::*;
 #[derive(Default)]
 struct MyApp {
     renderables: Vec<Box<dyn Renderable>>,
-    cam: Camera,
+    scene: Option<Scene>,
 }
 impl UserApp for MyApp {
     fn render(&mut self, ao: &AppObjects) -> Result<(), wgpu::SurfaceError> {
@@ -27,6 +27,11 @@ impl UserApp for MyApp {
         // We can't render unless the surface is configured
         if !ao.is_surface_configured {
             return Ok(());
+        }
+
+        // Initialize camera if necessary.
+        if self.scene.is_none() {
+            // self.scene = 
         }
 
         if self.renderables.len() == 0 {
@@ -48,7 +53,7 @@ impl UserApp for MyApp {
             ao: &ao,
             encoder: encoder,
             surface_tex_view: Some(view),
-            cam: &self.cam,
+            scene: &self.scene.as_ref().unwrap(),
         };
 
         {
@@ -65,7 +70,7 @@ impl UserApp for MyApp {
     fn handle_key(&mut self, _ao: &AppObjects, event_loop: &ActiveEventLoop, key: KeyCode, pressed: bool) {
 
         let t = nalgebra::Isometry3::<f32>::translation(0.1, 0., 0.);
-        self.cam.pose = self.cam.pose * t;
+        // self.cam.pose = self.cam.pose * t;
 
         for r in &mut self.renderables {
             r.handle_key(event_loop, key, pressed);
