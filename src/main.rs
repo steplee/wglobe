@@ -31,12 +31,14 @@ impl UserApp for MyApp {
 
         // Initialize camera if necessary.
         if self.scene.is_none() {
-            // self.scene = 
+            self.scene = Some(Scene::new(ao));
         }
 
         if self.renderables.len() == 0 {
-            self.renderables.push(Box::new(crate::renderables::SimpleShape::new(ao)));
+            self.renderables.push(Box::new(crate::renderables::SimpleShape::new(ao, &self.scene.as_ref().unwrap())));
         }
+
+        self.scene.as_ref().unwrap().update_buffer(&ao);
 
         let output = ao.surface.get_current_texture()?;
         let view = output

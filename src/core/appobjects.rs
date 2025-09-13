@@ -51,7 +51,13 @@ impl AppObjects {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::empty(),
+
+                // required_features: wgpu::Features::empty(),
+                // required_features: wgpu::Features::all_webgpu_mask(),
+                required_features: wgpu::Features::empty()
+                    // | wgpu::Features::BUFFER_BINDING_ARRAY
+                    ,
+
                 // WebGL doesn't support all of wgpu's features, so if
                 // we're building for the web we'll have to disable some.
                 required_limits: if cfg!(target_arch = "wasm32") {

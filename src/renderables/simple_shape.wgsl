@@ -14,9 +14,12 @@ struct LoweredScene {
     mv: mat4x4<f32>,
     proj: mat4x4<f32>,
     time: f32,
+    pad1: f32,
+    pad2: f32,
+    pad3: f32,
 };
 
-@group(1) @binding(0)
+@group(0) @binding(0)
 var<uniform> scene: LoweredScene;
 
 @vertex

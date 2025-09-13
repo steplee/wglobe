@@ -22,13 +22,18 @@ pub struct Scene {
     pub cam: CameraPose,
     pub time: f32,
 
-    pub buffer: wgpu::Buffer,
+    pub bind_group_layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
+    pub buffer: wgpu::Buffer,
 }
 
 impl CameraIntrin {
     fn to_matrix(&self) -> nalgebra::Matrix4<f32> {
         let mut out = nalgebra::Matrix4::<f32>::identity();
+
+        log::warn!("proj is identity for now");
+        return out;
+
         let left = self.tlbr[0];
         let rght = self.tlbr[2];
         let top = self.tlbr[1];
@@ -48,14 +53,14 @@ impl Default for CameraPose {
     fn default() -> Self {
         return CameraPose {
             intrin: CameraIntrin { tlbr: [-1.,-1.,1.,1.], zn: 0.001, zf: 100. },
-            pose: Isometry3f::look_at_lh(&Point3f::new(0.,0.,-2.), &Vector3f::zeros().into(), &Vector3f::y())
+            pose: Isometry3f::look_at_lh(&Point3f::new(0.,0.,-1.), &Vector3f::zeros().into(), &Vector3f::y())
+            // pose: Isometry3f::identity(),
         }
     }
 }
 
 impl Scene {
-    fn new(ao: &AppObjects) -> Self {
-
+    pub fn new(ao: &AppObjects) -> Self {
         let cam = Default::default();
 
         let buffer = ao.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -64,14 +69,44 @@ impl Scene {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
         });
 
-        let bind_group = todo!();
+        let bind_group_layout = ao.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("cameraBgl"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    // count: 1u32.try_into().ok(),
+                    count: None,
+                },
+            ],
+        });
+
+        let bind_group = ao.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("cameraBg"),
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffer.as_entire_binding(),
+            }],
+        });
 
         Scene {
             cam,
             time: 0.,
             buffer,
+            bind_group_layout,
             bind_group
         }
+    }
+
+    pub fn update_buffer(&self, ao: &AppObjects) {
+        let lowered_scene: LoweredScene = self.into();
+        ao.queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&lowered_scene));
     }
 }
 
@@ -85,10 +120,12 @@ where T: Default + Copy
 
 impl Into<LoweredScene> for &Scene {
     fn into(self) -> LoweredScene {
+        log::info!("mv:\n{}", self.cam.pose.to_matrix());
         LoweredScene {
             mv: slice_to_array(self.cam.pose.to_matrix().as_slice()),
             proj: slice_to_array(self.cam.intrin.to_matrix().as_slice()),
             time: self.time,
+            ..Default::default()
         }
     }
 }
@@ -98,7 +135,11 @@ impl Into<LoweredScene> for &Scene {
 pub struct LoweredScene {
     mv: [f32; 16],
     proj: [f32; 16],
+
     time: f32,
+    pad1: f32,
+    pad2: f32,
+    pad3: f32,
 }
 
 #[test]

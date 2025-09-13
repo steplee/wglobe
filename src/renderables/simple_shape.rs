@@ -2,7 +2,7 @@ use log::info;
 
 use wgpu::util::DeviceExt;
 
-use crate::core::{AppObjects, RenderState, Renderable};
+use crate::core::{AppObjects, RenderState, Renderable, Scene};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -64,7 +64,7 @@ pub struct SimpleShape {
     num_indices: u32,
 }
 impl SimpleShape {
-    pub fn new(ao: &AppObjects) -> Self {
+    pub fn new(ao: &AppObjects, scene: &Scene) -> Self {
         let shader = ao.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("simple_shape.wgsl").into()),
@@ -73,7 +73,7 @@ impl SimpleShape {
         let render_pipeline_layout =
             ao.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&scene.bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -169,6 +169,7 @@ impl Renderable for SimpleShape {
         });
 
         render_pass.set_pipeline(&self.render_pipeline);
+        render_pass.set_bind_group(0, &rs.scene.bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
         render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
